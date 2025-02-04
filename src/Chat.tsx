@@ -1,5 +1,5 @@
 import Markdown from "markdown-to-jsx"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import "./Chat.css"
 import { useParams } from "react-router"
