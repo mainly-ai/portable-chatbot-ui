@@ -1,0 +1,12 @@
+.chat {
+  &.snapping {
+    scroll-snap-type: y proximity;
+
+    &::after {
+      display: block;
+      content: "";
+      scroll-snap-align: end;
+      min-height: 1px; /* Fix for Firefox bug https://bugzil.la/1914178 */
+    }
+  }
+}
