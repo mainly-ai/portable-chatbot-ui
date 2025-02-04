@@ -132,7 +132,7 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 
 	const sendMessage = async (message: Message) => {
 		messageContentStore.createMessage(message.id, message)
-		const sse = new SSE(`https://${import.meta.env.VITE_POD_ID}.p.mainly.cloud/stream_run_payload`, {
+		const sse = new SSE(`${import.meta.env.VITE_API_ROOT ?? ""}/stream_run_payload`, {
 			method: 'POST',
 			headers: {
 				'Authorization': `Bearer TOKEN`
