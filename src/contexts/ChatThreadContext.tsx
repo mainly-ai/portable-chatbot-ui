@@ -114,6 +114,8 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			setCurrentId(id)
 			setMessageHandles([])
 			setMessageContentStore(createMessageContentStore())
+		} else if (!currentId && id) {
+			setCurrentId(id)
 		}
 	}, [id])
 
