@@ -34,12 +34,12 @@ function CodeRenderer({ className, content }: { className: string; content: stri
 	);
 }
 
-function renderRule(next: () => React.ReactNode, node: MarkdownToJSX.ParserResult, renderChildren: MarkdownToJSX.RuleOutput, state: MarkdownToJSX.State) {
+function renderRule(next: () => React.ReactNode, node: MarkdownToJSX.ParserResult, _renderChildren: MarkdownToJSX.RuleOutput, _state: MarkdownToJSX.State) {
 	console.log("renderRule", node)
 	if (node.type === RuleType.codeBlock && node.lang === 'latex') {
 		return <LatexRenderer text={node.text} />
 	}
-	else if (node.type === RuleType.codeBlock && node.lang) {
+	if (node.type === RuleType.codeBlock && node.lang) {
 		return <CodeRenderer content={String.raw`${node.text}`} className={`bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-300 px-3 py-2 whitespace-pre-wrap language-${node.lang} ${node.text.includes('\n') ? 'block' : ''}`} />
 	}
 
