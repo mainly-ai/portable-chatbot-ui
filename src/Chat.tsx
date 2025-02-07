@@ -5,6 +5,7 @@ import "./Chat.css"
 import { useParams } from "react-router"
 import { ChatThreadProvider, useChatThread, useMessage } from "./contexts/ChatThreadContext"
 import { type Message } from "./contexts/ChatThreadContext"
+import ProgressBar from "./ProgressBar"
 
 export default function Chat() {
 	const { threadId } = useParams()
@@ -33,9 +34,16 @@ function Message({ id }: { id: string }) {
 	if (!message) {
 		return <div>Loading...</div>
 	}
-	return (
-		<MessageContent message={message} />
-	)
+	const progressBarMatch = message.content.match(/\[\[\[progressbar (\w+) (\d+)\/(\d+) (.+?)\]\]\]/);
+
+	if (progressBarMatch) {
+		const [, id, progress, total, status] = progressBarMatch;
+		return (
+			<ProgressBar id={id} progress={parseInt(progress)} total={parseInt(total)} status={status} />
+		);
+	}
+
+	return <MessageContent message={message} />;
 }
 
 function splitMarkdown(markdown: string): string[] {

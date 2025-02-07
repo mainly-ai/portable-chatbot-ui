@@ -1,0 +1,20 @@
+.progress-bar {
+  width: 100%;
+  background-color: #f3f3f3;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 5px 0;
+}
+
+.progress-bar__fill {
+  height: 20px;
+  background-color: #4caf50;
+  transition: width 0.3s ease;
+}
+
+.progress-bar__status {
+  text-align: center;
+  font-size: 12px;
+  color: #333;
+  margin-top: 5px;
+}
