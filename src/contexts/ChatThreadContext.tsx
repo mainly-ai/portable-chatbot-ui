@@ -55,6 +55,14 @@ class MessageContentStore {
 			this.listeners.get(id)?.forEach(listener => listener(message))
 		}
 	}
+
+	setMessageContent(id: string, content: string) {
+		const message = this.messages.get(id)
+		if (message) {
+			message.content = content
+			this.messages.set(id, message)
+		}
+	}
 }
 
 function objectToFormData(obj: any) {
@@ -147,12 +155,12 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			}) as unknown as string
 		})
 
-		const assistantMessage: Message = {
+		let currentAssistantMessage: Message = {
 			content: "",
 			role: "assistant",
 			id: Math.random().toString(36).substring(2, 15)
 		}
-		messageContentStore.createMessage(assistantMessage.id, assistantMessage)
+		messageContentStore.createMessage(currentAssistantMessage.id, currentAssistantMessage)
 
 		sse.addEventListener("thread_id", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
@@ -160,9 +168,21 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			navigate(`/${data}`)
 		})
 
+		sse.addEventListener("new", (event: _SSEvent) => {
+			const data = JSON.parse(event.data)
+			data.id = data.id ?? currentAssistantMessage.id
+			currentAssistantMessage = data
+			messageContentStore.createMessage(data.id, data)
+		})
+
 		sse.addEventListener("delta", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
-			messageContentStore.appendMessageContent(assistantMessage.id, data)
+			messageContentStore.appendMessageContent(event.id ?? currentAssistantMessage.id, data)
+		})
+
+		sse.addEventListener("overwrite", (event: _SSEvent) => {
+			const data = JSON.parse(event.data)
+			messageContentStore.setMessageContent(event.id ?? currentAssistantMessage.id, data)
 		})
 	}
 
