@@ -57,11 +57,19 @@ class MessageContentStore {
 	}
 
 	setMessageContent(id: string, content: string) {
-		const message = this.messages.get(id)
+		let message = this.messages.get(id)
 		if (message) {
 			message.content = content
 			this.messages.set(id, message)
+		} else {
+			message = {
+				content: content,
+				role: "assistant",
+				id: id
+			}
+			this.messages.set(id, message)
 		}
+		this.listeners.get(id)?.forEach(listener => listener(message))
 	}
 }
 
@@ -168,21 +176,18 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			navigate(`/${data}`)
 		})
 
-		sse.addEventListener("new", (event: _SSEvent) => {
+		sse.addEventListener("set", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
-			data.id = data.id ?? currentAssistantMessage.id
-			currentAssistantMessage = data
-			messageContentStore.createMessage(data.id, data)
+			if (!event.id) {
+				console.error("set event has no id", event)
+				return
+			}
+			messageContentStore.setMessageContent(event.id, data)
 		})
 
 		sse.addEventListener("delta", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
 			messageContentStore.appendMessageContent(event.id ?? currentAssistantMessage.id, data)
-		})
-
-		sse.addEventListener("overwrite", (event: _SSEvent) => {
-			const data = JSON.parse(event.data)
-			messageContentStore.setMessageContent(event.id ?? currentAssistantMessage.id, data)
 		})
 	}
 
