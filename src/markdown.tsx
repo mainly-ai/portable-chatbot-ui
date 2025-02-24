@@ -5,6 +5,7 @@ const Highlight = React.lazy(async () => await import('react-highlight'))
 const TeX = React.lazy(async () => await import('@matejmazur/react-katex'))
 
 import ProgressBar from './MarkdownComponents/ProgressBar';
+import FileUploadRequest from './MarkdownComponents/FileUploadRequest';
 
 import './highlight.css'
 import 'katex/dist/katex.min.css';
@@ -117,6 +118,9 @@ const markdownOptions: MarkdownToJSX.Options = {
 		...baseOverrides,
 		ProgressBar: {
 			component: ProgressBar
+		},
+		FileUploadRequest: {
+			component: FileUploadRequest
 		}
 	},
 }
