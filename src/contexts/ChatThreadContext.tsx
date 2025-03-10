@@ -155,12 +155,10 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			headers: {
 				'Authorization': `Bearer TOKEN`
 			},
-			payload: objectToFormData({
-				"payload": JSON.stringify({
-					"prompt": message.content,
-					"thread_id": currentId
-				})
-			}) as unknown as string
+			payload: JSON.stringify({
+				"prompt": message.content,
+				"thread_id": currentId
+			})
 		})
 
 		let currentAssistantMessage: Message = {
