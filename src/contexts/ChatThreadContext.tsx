@@ -73,14 +73,6 @@ class MessageContentStore {
 	}
 }
 
-function objectToFormData(obj: any) {
-	const formData = new FormData()
-	for (const key in obj) {
-		formData.append(key, obj[key])
-	}
-	return formData
-}
-
 export const ChatThreadContext = createContext<{
 	messageHandles: MessageHandle[]
 	messageContentStore: MessageContentStore,
