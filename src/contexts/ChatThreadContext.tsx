@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { useClerk } from "@clerk/clerk-react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 
 import { type _SSEvent, SSE } from "sse.js"
@@ -115,6 +116,8 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 
 	const [messageHandles, setMessageHandles] = useState<MessageHandle[]>([])
 	const [messageContentStore, setMessageContentStore] = useState<MessageContentStore>(createMessageContentStore)
+	const { session } = useClerk()
+	const token = useMemo(() => session?.getToken(), [session])
 
 	useEffect(() => {
 		// if the id changes to undefined or another valid id, reset the state
@@ -145,7 +148,7 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 		const sse = new SSE(`${import.meta.env.VITE_API_ROOT ?? ""}/stream_run_payload`, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer TOKEN`
+				'Authorization': `Bearer ${await token}`
 			},
 			payload: JSON.stringify({
 				"prompt": message.content,
