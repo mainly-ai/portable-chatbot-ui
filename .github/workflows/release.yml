@@ -41,6 +41,8 @@ jobs:
         
       - name: Build
         run: pnpm build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
         
       - name: Zip dist directory
         run: cd dist && zip -r ../dist.zip .
