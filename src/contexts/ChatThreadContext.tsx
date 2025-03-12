@@ -1,5 +1,5 @@
 import { useClerk } from "@clerk/clerk-react"
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 
 import { type _SSEvent, SSE } from "sse.js"
