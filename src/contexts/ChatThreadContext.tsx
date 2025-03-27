@@ -180,7 +180,16 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 
 		sse.addEventListener("delta", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
-			messageContentStore.appendMessageContent(event.id ?? currentAssistantMessage.id, data)
+			if (event.id && event.id !== currentAssistantMessage.id) {
+				currentAssistantMessage = {
+					content: data,
+					role: "assistant",
+					id: event.id
+				}
+				messageContentStore.setMessageContent(event.id, data)
+			} else {
+				messageContentStore.appendMessageContent(event.id ?? currentAssistantMessage.id, data)
+			}
 		})
 	}
 
@@ -188,5 +197,5 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 		<ChatThreadContext.Provider value={{ messageHandles, messageContentStore, sendMessage }}>
 			{children}
 		</ChatThreadContext.Provider>
-	)
+)
 }
