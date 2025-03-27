@@ -69,6 +69,7 @@ class MessageContentStore {
 				id: id
 			}
 			this.messages.set(id, message)
+			this.listeners.get("onCreateMessage")?.forEach(listener => listener(message as Message))
 		}
 		this.listeners.get(id)?.forEach(listener => listener(message))
 	}
