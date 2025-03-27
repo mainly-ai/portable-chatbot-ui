@@ -1,32 +1,12 @@
 import { MessageCirclePlus } from "lucide-react"
 import { Link } from "react-router"
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 
-export default function Sidebar() {
+export default function Sidebar({ children }: React.PropsWithChildren) {
 	return (
 		<aside className="bg-slate-50 m-2 p-2 rounded-xl flex flex-col justify-between gap-2">
 			<NewChatButton />
-			<SignedIn>
-				<UserButton showName appearance={{
-					elements: {
-						avatarBox: "!w-12 !h-12",
-						userButtonBox: {
-							flexDirection: "row-reverse"
-						},
-						rootBox: {
-							width: "100%",
-						},
-						button: {
-							width: "100%",
-							justifyContent: "flex-start",
-						}
-					}
-				}} />
-			</SignedIn>
-			<SignedOut>
-				<SignInButton />
-			</SignedOut>
-		</aside>
+			{children}
+	</aside>
 	)
 }
 

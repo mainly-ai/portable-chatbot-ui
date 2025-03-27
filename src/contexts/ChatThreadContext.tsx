@@ -1,8 +1,8 @@
-import { useClerk } from "@clerk/clerk-react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 
 import { type _SSEvent, SSE } from "sse.js"
+import { useAuth } from "./AuthContext"
 
 export type Message = {
 	content: string
@@ -116,7 +116,7 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 
 	const [messageHandles, setMessageHandles] = useState<MessageHandle[]>([])
 	const [messageContentStore, setMessageContentStore] = useState<MessageContentStore>(createMessageContentStore)
-	const { session } = useClerk()
+	const { getToken } = useAuth()
 
 	useEffect(() => {
 		// if the id changes to undefined or another valid id, reset the state
@@ -143,15 +143,11 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 	}, [messageContentStore])
 
 	const sendMessage = async (message: Message) => {
-		if (!session) {
-			throw new Error("No session found")
-		}
-
 		messageContentStore.createMessage(message.id, message)
 		const sse = new SSE(`${import.meta.env.VITE_API_ROOT ?? ""}/stream_run_payload`, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${await session?.getToken()}`
+				'Authorization': `Bearer ${await getToken()}`
 			},
 			payload: JSON.stringify({
 				"prompt": message.content,
