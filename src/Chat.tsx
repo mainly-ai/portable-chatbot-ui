@@ -42,10 +42,10 @@ function splitMarkdown(markdown: string): string[] {
 	// This regex matches:
 	// 1. Code blocks (```...```)
 	// 2. Inline code (`...`)
-	// 3. Headers (# ...)
-	// 4. Lists (- or * or 1. ...)
-	// 5. Paragraphs (any text between newlines)
-	const regex = /(?:```[\s\S]*?```)|(?:`[^`]*`)|(?:^#{1,6}\s.*$)|(?:^(?:[*-]|\d+\.)\s+.*$)|(?:^[^`#\s][^\n]+$)/gm
+	// 3. Headers (# ..., possibly indented)
+	// 4. Lists (- or * or 1. ..., possibly indented)
+	// 5. Paragraphs (any text between newlines, possibly indented, not matching other patterns)
+	const regex = /(?:```[\s\S]*?```)|(?:`[^`]*`)|(?:^\s*#{1,6}\s.*$)|(?:^\s*(?:[*-]|\d+\.)\s+.*$)|(?:^\s*[^`#\s][^\n]+$)/gm
 
 	const matches = markdown.match(regex) || []
 	return matches.map(chunk => chunk.trim())
