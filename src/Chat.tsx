@@ -23,9 +23,28 @@ export default function Chat() {
 	)
 }
 
-function Messages () {
+function Messages() {
 	const { messageHandles } = useChatThread()
-	return messageHandles.map((message) => <Message key={message.id} id={message.id} />)
+
+	const testMessages: Message[] = [
+		{
+			id: 'test-1',
+			role: 'user',
+			content: 'Here is a mindmap: ![Mindmap](https://colormadehappy.com/wp-content/uploads/2022/11/Snowman-Drawing-5-1.jpg.webp)'
+		},
+		{
+			id: 'test-2',
+			role: 'assistant',
+			content: 'Great! And here is a wide image of a landscape: ![A wide landscape](https://storage.googleapis.com/static.aiprompt.co/misc/landscape.png)'
+		}
+	];
+	// {testMessages.map((message) => <MessageContent key={message.id} message={message} />)}
+
+	return (
+		<>
+			{messageHandles.map((message) => <Message key={message.id} id={message.id} />)}
+		</>
+	);
 }
 
 function Message({ id }: { id: string }) {
@@ -57,7 +76,8 @@ function MessageContent({ message }: { message: Message }) {
 
 	return (
 		<div className="flex flex-col gap-3 max-w-[80%]" style={{
-			alignSelf: message.role === "user" ? "flex-end" : "flex-start" }}>
+			alignSelf: message.role === "user" ? "flex-end" : "flex-start"
+		}}>
 			{chunks.map((chunk, index) => <MarkdownChunk key={index} markdown={chunk} />)}
 		</div>
 	)
@@ -72,7 +92,7 @@ function Chatbox() {
 
 	return (
 		<section className="relative flex flex-col items-center max-w-4xl w-full">
-			<div className="absolute -top-8 left-6 bg-gradient-to-t from-white to-transparent h-8" style={{ width: 'calc(100% - 3rem)'}} />
+			<div className="absolute -top-8 left-6 bg-gradient-to-t from-white to-transparent h-8" style={{ width: 'calc(100% - 3rem)' }} />
 			<ChatboxInput onSubmit={sendMessage} />
 		</section>
 	)

@@ -62,11 +62,17 @@ const baseOverrides: MarkdownToJSX.Options['overrides'] = {
 			className: 'text-base font-semibold mb-1'
 		}
 	},
+	img: {
+		component: 'img',
+		props: {
+			className: 'max-w-full h-auto rounded-md',
+		}
+	},
 	ul: {
 		component: 'ul',
 		props: {
 			className: 'list-disc ml-4 mb-2'
-			}
+		}
 	},
 	ol: {
 		component: 'ol',
