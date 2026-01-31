@@ -26,18 +26,7 @@ export default function Chat() {
 function Messages() {
 	const { messageHandles } = useChatThread()
 
-	const testMessages: Message[] = [
-		{
-			id: 'test-1',
-			role: 'user',
-			content: 'Here is a mindmap: ![Mindmap](https://colormadehappy.com/wp-content/uploads/2022/11/Snowman-Drawing-5-1.jpg.webp)'
-		},
-		{
-			id: 'test-2',
-			role: 'assistant',
-			content: 'Great! And here is a wide image of a landscape: ![A wide landscape](https://storage.googleapis.com/static.aiprompt.co/misc/landscape.png)'
-		}
-	];
+
 	// {testMessages.map((message) => <MessageContent key={message.id} message={message} />)}
 
 	return (

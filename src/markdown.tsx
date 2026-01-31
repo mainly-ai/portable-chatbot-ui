@@ -6,6 +6,7 @@ const TeX = React.lazy(async () => await import('@matejmazur/react-katex'))
 
 import ProgressBar from './MarkdownComponents/ProgressBar';
 import FileUploadRequest from './MarkdownComponents/FileUploadRequest';
+import AudioPlayer from './MarkdownComponents/AudioPlayer';
 
 import './highlight.css'
 import 'katex/dist/katex.min.css';
@@ -37,7 +38,7 @@ function CodeRenderer({ className, content }: { className: string; content: stri
 	);
 }
 
-function renderRule(next: () => React.ReactNode, node: MarkdownToJSX.ParserResult, _renderChildren: MarkdownToJSX.RuleOutput, _state: MarkdownToJSX.State) {
+function renderRule(next: () => React.ReactNode, node: MarkdownToJSX.ParserResult) {
 	console.log("renderRule", node)
 	if (node.type === RuleType.codeBlock && node.lang === 'latex') {
 		return <LatexRenderer text={node.text} />
@@ -127,6 +128,9 @@ const markdownOptions: MarkdownToJSX.Options = {
 		},
 		FileUploadRequest: {
 			component: FileUploadRequest
+		},
+		AudioPlayer: {
+			component: AudioPlayer
 		}
 	},
 }
@@ -135,4 +139,5 @@ export default function Markdown({ children }: { children: string }) {
 	return <MarkdownRenderer options={markdownOptions}>{children}</MarkdownRenderer>
 }
 
-// <ProgressBar label={'Hello World'} value={33} /> 
+// <ProgressBar label={'Hello World'} value={33} />
+// <AudioPlayer src="https://example.com/audio.mp3" caption="Audio" /> 
