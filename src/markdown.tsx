@@ -119,24 +119,24 @@ const baseOverrides: MarkdownToJSX.Options['overrides'] = {
 	},
 }
 
-const markdownOptions: MarkdownToJSX.Options = {
-	renderRule,
-	overrides: {
-		...baseOverrides,
-		ProgressBar: {
-			component: ProgressBar
-		},
-		FileUploadRequest: {
-			component: FileUploadRequest
-		},
-		AudioPlayer: {
-			component: AudioPlayer
-		}
-	},
-}
-
 export default function Markdown({ children }: { children: string }) {
-	return <MarkdownRenderer options={markdownOptions}>{children}</MarkdownRenderer>
+	const options = React.useMemo(() => ({
+		renderRule,
+		overrides: {
+			...baseOverrides,
+			ProgressBar: {
+				component: ProgressBar
+			},
+			FileUploadRequest: {
+				component: FileUploadRequest
+			},
+			AudioPlayer: {
+				component: AudioPlayer
+			}
+		},
+	}), []);
+
+	return <MarkdownRenderer options={options}>{children}</MarkdownRenderer>
 }
 
 // <ProgressBar label={'Hello World'} value={33} />

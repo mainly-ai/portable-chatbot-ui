@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Play, Pause } from 'lucide-react';
 
 export default function AudioPlayer({ src, caption }: { src: string; caption?: string }) {
+  console.log('AudioPlayer rendering', src);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -29,14 +30,14 @@ export default function AudioPlayer({ src, caption }: { src: string; caption?: s
       >
         {isPlaying ? <Pause size={20} /> : <Play size={20} />}
       </button>
-      
+
       <div className="flex flex-col">
         {caption && <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{caption}</span>}
         <audio
           ref={audioRef}
           src={src}
           onEnded={handleEnded}
-          className="hidden" 
+          className="hidden"
         />
       </div>
     </div>
