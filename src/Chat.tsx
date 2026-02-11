@@ -1,5 +1,5 @@
 import Markdown from "./markdown"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import "./Chat.css"
 import { useParams } from "react-router"
@@ -46,6 +46,38 @@ function Message({ id }: { id: string }) {
 	)
 }
 
+function Cursor({ messageId }: { messageId: string }) {
+	const { streamStatus } = useChatThread()
+	const [status, setStatus] = useState<"working" | "broken" | "hidden">("hidden")
+
+	useEffect(() => {
+		if (!streamStatus.isActive || streamStatus.messageId !== messageId || !streamStatus.showCursor) {
+			setStatus("hidden")
+			return
+		}
+
+		setStatus("working")
+
+		const interval = setInterval(() => {
+			if (streamStatus.lastWorkAt && Date.now() - streamStatus.lastWorkAt > 15000) {
+				setStatus("broken")
+			} else {
+				setStatus("working")
+			}
+		}, 100)
+
+		return () => clearInterval(interval)
+	}, [streamStatus, messageId])
+
+	if (status === "hidden") return null
+
+	return (
+		<span className={`cursor-animation ${status === "broken" ? "broken" : ""}`}>
+			{status === "broken" ? "⚠️" : "●"}
+		</span>
+	)
+}
+
 function splitMarkdown(markdown: string): string[] {
 	// This regex matches:
 	// 1. Code blocks (```...```)
@@ -68,6 +100,7 @@ function MessageContent({ message }: { message: Message }) {
 			alignSelf: message.role === "user" ? "flex-end" : "flex-start"
 		}}>
 			{chunks.map((chunk, index) => <MarkdownChunk key={index} markdown={chunk} />)}
+			<Cursor messageId={message.id} />
 		</div>
 	)
 }

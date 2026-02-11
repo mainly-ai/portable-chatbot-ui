@@ -14,6 +14,13 @@ export type MessageHandle = {
 	id: string
 }
 
+export type StreamStatus = {
+	isActive: boolean
+	lastWorkAt: number | null
+	messageId: string | null
+	showCursor: boolean
+}
+
 // An external store for message content. We use this to get better control of when and how react renders the chat.
 class MessageContentStore {
 	private messages: Map<string, Message> = new Map()
@@ -79,10 +86,12 @@ export const ChatThreadContext = createContext<{
 	messageHandles: MessageHandle[]
 	messageContentStore: MessageContentStore,
 	sendMessage: (message: Message) => void
+	streamStatus: StreamStatus
 }>({
 	messageHandles: [],
 	messageContentStore: new MessageContentStore(new Map()),
-	sendMessage: () => {}
+	sendMessage: () => { },
+	streamStatus: { isActive: false, lastWorkAt: null, messageId: null, showCursor: false }
 })
 
 export function useChatThread() {
@@ -117,6 +126,7 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 
 	const [messageHandles, setMessageHandles] = useState<MessageHandle[]>([])
 	const [messageContentStore, setMessageContentStore] = useState<MessageContentStore>(createMessageContentStore)
+	const [streamStatus, setStreamStatus] = useState<StreamStatus>({ isActive: false, lastWorkAt: null, messageId: null, showCursor: false })
 	const { getToken } = useAuth()
 
 	useEffect(() => {
@@ -163,6 +173,13 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 		}
 		messageContentStore.createMessage(currentAssistantMessage.id, currentAssistantMessage)
 
+		setStreamStatus({
+			isActive: true,
+			lastWorkAt: null,
+			messageId: currentAssistantMessage.id,
+			showCursor: false
+		})
+
 		sse.addEventListener("thread_id", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
 			console.log('new thread id', data)
@@ -178,8 +195,20 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			messageContentStore.setMessageContent(event.id, data)
 		})
 
+		sse.addEventListener("work", () => {
+			setStreamStatus(prev => ({
+				...prev,
+				lastWorkAt: Date.now(),
+				showCursor: true
+			}))
+		})
+
 		sse.addEventListener("delta", (event: _SSEvent) => {
 			const data = JSON.parse(event.data)
+			setStreamStatus(prev => ({
+				...prev,
+				showCursor: false
+			}))
 			if (event.id && event.id !== currentAssistantMessage.id) {
 				currentAssistantMessage = {
 					content: data,
@@ -187,15 +216,25 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 					id: event.id
 				}
 				messageContentStore.setMessageContent(event.id, data)
+				// Update stream status to point to the new message ID if it changed
+				setStreamStatus(prev => ({ ...prev, messageId: event.id }))
 			} else {
 				messageContentStore.appendMessageContent(event.id ?? currentAssistantMessage.id, data)
 			}
 		})
+
+		sse.addEventListener("readystatechange", () => {
+			if (sse.readyState >= 2) { // CLOSED
+				setStreamStatus({ isActive: false, lastWorkAt: null, messageId: null, showCursor: false })
+			}
+		})
+
+		sse.stream()
 	}
 
 	return (
-		<ChatThreadContext.Provider value={{ messageHandles, messageContentStore, sendMessage }}>
+		<ChatThreadContext.Provider value={{ messageHandles, messageContentStore, sendMessage, streamStatus }}>
 			{children}
 		</ChatThreadContext.Provider>
-)
+	)
 }
