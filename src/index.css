@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
-html, body, #root {
-	height: 100%;
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
   padding: 0;
+  @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-200;
 }
 
 #root {
@@ -15,4 +20,43 @@ html, body, #root {
   display: grid;
   grid-template-columns: 300px 1fr;
   grid-template-rows: 1fr;
+}
+
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  display: block;
+  /* Ensure visibility */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  /* slate-300 */
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+:where(.dark) ::-webkit-scrollbar-thumb {
+  background-color: #334155;
+  /* slate-700 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+  /* slate-400 */
+}
+
+:where(.dark) ::-webkit-scrollbar-thumb:hover {
+  background-color: #475569;
+  /* slate-600 */
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

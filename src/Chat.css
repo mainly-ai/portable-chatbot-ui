@@ -16,7 +16,7 @@
   display: inline-block;
   margin-left: 4px;
   animation: pulse 1s infinite;
-  color: #000;
+  color: currentColor;
 }
 
 .cursor-animation.broken {

@@ -12,21 +12,28 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
 }
 
 import { BrowserRouter, Route, Routes } from "react-router";
+import { ThemeProvider } from "./contexts/ThemeContext"
 import { Shell } from './Shell';
 import Chat from './Chat';
 import { AuthProvider } from './contexts/AuthContext';
 
+import { LayoutProvider } from './contexts/LayoutContext';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Shell />}>
-            <Route index element={<Chat />} />
-            <Route path="/:threadId" element={<Chat />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <LayoutProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route element={<Shell />}>
+                <Route index element={<Chat />} />
+                <Route path="/:threadId" element={<Chat />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </LayoutProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

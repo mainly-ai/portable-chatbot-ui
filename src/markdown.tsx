@@ -8,6 +8,10 @@ import ProgressBar from './MarkdownComponents/ProgressBar';
 import FileUploadRequest from './MarkdownComponents/FileUploadRequest';
 import AudioPlayer from './MarkdownComponents/AudioPlayer';
 
+import CustomImg from './MarkdownComponents/CustomImg';
+import BackgroundImg from './MarkdownComponents/BackgroundImg';
+import SidebarImg from './MarkdownComponents/SidebarImg';
+
 import './highlight.css'
 import 'katex/dist/katex.min.css';
 import type { KatexOptions } from 'katex';
@@ -132,12 +136,26 @@ export default function Markdown({ children }: { children: string }) {
 			},
 			AudioPlayer: {
 				component: AudioPlayer
+			},
+			img: {
+				component: CustomImg
+			},
+			BackgroundImg: {
+				component: BackgroundImg
+			},
+			SidebarImg: {
+				component: SidebarImg
 			}
 		},
 	}), []);
 
-	return <MarkdownRenderer options={options}>{children}</MarkdownRenderer>
-}
+	// Pre-process content to support kebab-case custom tags by converting to PascalCase
+	// parsing of HTML in markdown-to-jsx typically requires PascalCase for custom components to be recognized as such
+	const content = children
+		.replace(/<background-img/g, '<BackgroundImg')
+		.replace(/<\/background-img/g, '</BackgroundImg')
+		.replace(/<sidebar-img/g, '<SidebarImg')
+		.replace(/<\/sidebar-img/g, '</SidebarImg')
 
-// <ProgressBar label={'Hello World'} value={33} />
-// <AudioPlayer src="https://example.com/audio.mp3" caption="Audio" /> 
+	return <MarkdownRenderer options={options}>{content}</MarkdownRenderer>
+} 

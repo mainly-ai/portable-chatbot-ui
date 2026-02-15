@@ -87,11 +87,13 @@ export const ChatThreadContext = createContext<{
 	messageContentStore: MessageContentStore,
 	sendMessage: (message: Message) => void
 	streamStatus: StreamStatus
+	threadId: string | undefined
 }>({
 	messageHandles: [],
 	messageContentStore: new MessageContentStore(new Map()),
 	sendMessage: () => { },
-	streamStatus: { isActive: false, lastWorkAt: null, messageId: null, showCursor: false }
+	streamStatus: { isActive: false, lastWorkAt: null, messageId: null, showCursor: false },
+	threadId: undefined
 })
 
 export function useChatThread() {
@@ -233,7 +235,7 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 	}
 
 	return (
-		<ChatThreadContext.Provider value={{ messageHandles, messageContentStore, sendMessage, streamStatus }}>
+		<ChatThreadContext.Provider value={{ messageHandles, messageContentStore, sendMessage, streamStatus, threadId: currentId }}>
 			{children}
 		</ChatThreadContext.Provider>
 	)
