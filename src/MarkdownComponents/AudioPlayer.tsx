@@ -25,7 +25,7 @@ export default function AudioPlayer({ src, caption }: { src: string; caption?: s
     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 w-fit my-2">
       <button
         onClick={togglePlay}
-        className="p-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="p-2 rounded-full bg-neutral-200 hover:bg-neutral-300 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
         {isPlaying ? <Pause size={20} /> : <Play size={20} />}

@@ -1,4 +1,5 @@
 import Markdown from "./markdown"
+import { SidebarImage } from "./SidebarImage"
 import { useState, useEffect, useRef } from "react"
 
 import "./Chat.css"
@@ -21,7 +22,106 @@ export default function Chat() {
 }
 
 function ChatLayout() {
-	const { backgroundImage, sidebarImages } = useLayoutContext()
+	const { backgroundImage, sidebarImages, setSidebarImage, setBackgroundImage } = useLayoutContext()
+	const { messageHandles, streamStatus, threadId } = useChatThread()
+	const { getToken } = useAuth()
+
+	const sseRef = useRef<SSE | null>(null)
+
+	// Fetch sidebar image logic
+	const fetchSidebarImage = async () => {
+		// Close existing connection if any
+		if (sseRef.current) {
+			sseRef.current.close()
+			sseRef.current = null
+		}
+
+		try {
+			const token = await getToken()
+			const url = `${import.meta.env.VITE_API_ROOT ?? ""}/image_update${threadId ? `?thread_id=${threadId}` : ""}`
+
+			console.log("Checking for sidebar/background image updates...", url)
+			const sse = new SSE(url, {
+				headers: {
+					'Authorization': `Bearer ${token}`
+				}
+			})
+			sseRef.current = sse
+
+			sse.addEventListener('sidebar-img', (event: _SSEvent) => {
+				try {
+					const decodedData = JSON.parse(event.data)
+
+					// Parse Left Sidebar
+					const leftMatch = decodedData.match(/<sidebar-img\s+([^>]*)\/>/i)
+					if (leftMatch) {
+						const attributes = leftMatch[1]
+						const srcMatch = attributes.match(/src=["'](.*?)["']/i)
+						const widthMatch = attributes.match(/width=["'](.*?)["']/i)
+						if (srcMatch) {
+							setSidebarImage('left', srcMatch[1], widthMatch ? widthMatch[1] : undefined)
+						}
+					}
+
+					// Parse Right Sidebar
+					const rightMatch = decodedData.match(/<sidebar-img-right\s+([^>]*)\/>/i)
+					if (rightMatch) {
+						const attributes = rightMatch[1]
+						const srcMatch = attributes.match(/src=["'](.*?)["']/i)
+						const widthMatch = attributes.match(/width=["'](.*?)["']/i)
+						if (srcMatch) {
+							setSidebarImage('right', srcMatch[1], widthMatch ? widthMatch[1] : undefined)
+						}
+					}
+
+					// Parse Background Image
+					const bgMatch = decodedData.match(/<background-img\s+([^>]*)\/>/i)
+					if (bgMatch) {
+						const attributes = bgMatch[1]
+						const srcMatch = attributes.match(/src=["'](.*?)["']/i)
+						if (srcMatch) {
+							setBackgroundImage(srcMatch[1])
+						}
+					}
+
+				} catch (e) {
+					console.error("Failed to parse sidebar/background SSE data", e)
+				}
+				// Close after receiving data (single poll)
+				sse.close()
+				sseRef.current = null
+			})
+
+			sse.addEventListener('error', (e: any) => {
+				console.warn("Sidebar image SSE error", e)
+				sse.close()
+				sseRef.current = null
+			})
+
+			sse.stream()
+		} catch (e) {
+			console.error("Failed to setup sidebar image SSE", e)
+		}
+	}
+
+	// Poll every 5 minutes
+	useEffect(() => {
+		fetchSidebarImage() // Initial check
+		const interval = setInterval(fetchSidebarImage, 5 * 60 * 1000) // 5 minutes
+		return () => {
+			clearInterval(interval)
+			if (sseRef.current) {
+				sseRef.current.close()
+			}
+		}
+	}, [threadId])
+
+	// Trigger on new messages or stream start
+	useEffect(() => {
+		if (messageHandles.length > 0) {
+			fetchSidebarImage()
+		}
+	}, [messageHandles.length, streamStatus.isActive])
 
 	const isVideo = (url: string) => {
 		return url.match(/\.(mp4|webm|ogg)$/i)
@@ -53,27 +153,14 @@ function ChatLayout() {
 			)}
 
 			{/* Sidebar Left */}
+			{/* Sidebar Left */}
 			{sidebarImages.left.src && (
-				<div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 touch-none pointer-events-none">
-					<img
-						src={sidebarImages.left.src}
-						className="max-w-[300px] max-h-[80vh] object-contain rounded-xl shadow-lg"
-						alt="sidebar left"
-						style={sidebarImages.left.width ? { maxWidth: sidebarImages.left.width } : {}}
-					/>
-				</div>
+				<SidebarImage src={sidebarImages.left.src} width={sidebarImages.left.width} align="left" />
 			)}
 
 			{/* Sidebar Right */}
 			{sidebarImages.right.src && (
-				<div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 touch-none pointer-events-none">
-					<img
-						src={sidebarImages.right.src}
-						className="max-w-[300px] max-h-[80vh] object-contain rounded-xl shadow-lg"
-						alt="sidebar right"
-						style={sidebarImages.right.width ? { maxWidth: sidebarImages.right.width } : {}}
-					/>
-				</div>
+				<SidebarImage src={sidebarImages.right.src} width={sidebarImages.right.width} align="right" />
 			)}
 
 			{/* Blur Overlay - Tones down background and sidebars for readability */}
@@ -82,8 +169,8 @@ function ChatLayout() {
 			)}
 
 			{/* Main Content */}
-			<div className="flex flex-col flex-1 overflow-hidden items-center z-10 w-full relative">
-				<section className="chat snapping overflow-y-scroll flex flex-col items-center max-w-4xl w-full flex-1">
+			<div className="flex flex-col flex-1 overflow-hidden items-center z-10 w-full relative pointer-events-none">
+				<section className="chat snapping overflow-y-scroll flex flex-col items-center max-w-4xl w-full flex-1 pointer-events-auto">
 					<div className="flex flex-col flex-1 pb-8 w-full px-6 gap-8 pt-16">
 						<Messages />
 					</div>
@@ -181,135 +268,21 @@ function MarkdownChunk({ markdown }: { markdown: string }) {
 }
 
 function Chatbox() {
-	const { sendMessage, threadId } = useChatThread()
-	const { setSidebarImage, setBackgroundImage } = useLayoutContext()
-	const { getToken } = useAuth()
-	const sidebarFetchEnabled = useRef(true)
-	const isLoopActive = useRef(false)
-	const threadIdRef = useRef(threadId)
-
-	useEffect(() => {
-		threadIdRef.current = threadId
-	}, [threadId])
-
-	useEffect(() => {
-		return () => {
-			sidebarFetchEnabled.current = false
-		}
-	}, [])
-
-	const fetchSidebarImage = async () => {
-		if (!sidebarFetchEnabled.current) {
-			isLoopActive.current = false
-			return
-		}
-
-		console.log("Scheduling sidebar fetch in 10s...")
-		setTimeout(async () => {
-			if (!sidebarFetchEnabled.current) {
-				isLoopActive.current = false
-				return
-			}
-
-			try {
-				const token = await getToken()
-				const currentThreadId = threadIdRef.current
-				const url = `${import.meta.env.VITE_API_ROOT ?? ""}/image_update${currentThreadId ? `?thread_id=${currentThreadId}` : ""}`
-
-				console.log("Fetching sidebar image from", url)
-				const sse = new SSE(url, {
-					headers: {
-						'Authorization': `Bearer ${token}`
-					}
-				})
-
-				sse.addEventListener('sidebar-img', (event: _SSEvent) => {
-					try {
-						const decodedData = JSON.parse(event.data)
-
-						// Parse Left Sidebar
-						const leftMatch = decodedData.match(/<sidebar-img\s+([^>]*)\/>/i)
-						if (leftMatch) {
-							const attributes = leftMatch[1]
-							const srcMatch = attributes.match(/src=["'](.*?)["']/i)
-							const widthMatch = attributes.match(/width=["'](.*?)["']/i)
-							if (srcMatch) {
-								setSidebarImage('left', srcMatch[1], widthMatch ? widthMatch[1] : undefined)
-							}
-						}
-
-						// Parse Right Sidebar
-						const rightMatch = decodedData.match(/<sidebar-img-right\s+([^>]*)\/>/i)
-						if (rightMatch) {
-							const attributes = rightMatch[1]
-							const srcMatch = attributes.match(/src=["'](.*?)["']/i)
-							const widthMatch = attributes.match(/width=["'](.*?)["']/i)
-							if (srcMatch) {
-								setSidebarImage('right', srcMatch[1], widthMatch ? widthMatch[1] : undefined)
-							}
-						}
-
-						// Parse Background Image
-						const bgMatch = decodedData.match(/<background-img\s+([^>]*)\/>/i)
-						if (bgMatch) {
-							const attributes = bgMatch[1]
-							const srcMatch = attributes.match(/src=["'](.*?)["']/i)
-							if (srcMatch) {
-								setBackgroundImage(srcMatch[1])
-							}
-						}
-
-					} catch (e) {
-						console.error("Failed to parse sidebar/background SSE data", e)
-					}
-					sse.close()
-					// Recurse on success
-					fetchSidebarImage()
-				})
-
-				sse.addEventListener('error', (e: any) => {
-					console.warn("Sidebar image SSE error, disabling feature.", e)
-					sidebarFetchEnabled.current = false
-					isLoopActive.current = false
-					sse.close()
-				})
-
-				sse.stream()
-			} catch (e) {
-				console.error("Failed to setup sidebar image SSE, disabling feature.", e)
-				sidebarFetchEnabled.current = false
-				isLoopActive.current = false
-			}
-		}, 10000)
-	}
-
-	const handleSendMessage = (message: Message) => {
-		sendMessage(message)
-
-		if (sidebarFetchEnabled.current && !isLoopActive.current) {
-			isLoopActive.current = true
-			// Start the first fetch (will wait 10s)
-			fetchSidebarImage()
-		}
-	}
-
-	return (
-		<section className="relative flex flex-col items-center max-w-4xl w-full">
-			<div className="absolute -top-8 left-6 bg-gradient-to-t from-white dark:from-slate-950 to-transparent h-8 transition-colors duration-200" style={{ width: 'calc(100% - 3rem)' }} />
-			<ChatboxInput onSubmit={handleSendMessage} />
-		</section>
-	)
-}
-
-function ChatboxInput({ onSubmit }: { onSubmit: (message: Message) => void }) {
+	const { sendMessage } = useChatThread()
 	const [input, setInput] = useState("")
 
 	const triggerSubmit = () => {
-		onSubmit({ content: input, role: "user", id: Math.random().toString(36).substring(2, 15) })
+		if (!input.trim()) return
+		sendMessage({
+			role: "user",
+			content: input,
+			id: crypto.randomUUID()
+		})
 		setInput("")
 	}
 
 	const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault()
 			triggerSubmit()
@@ -317,7 +290,7 @@ function ChatboxInput({ onSubmit }: { onSubmit: (message: Message) => void }) {
 	}
 
 	return (
-		<div className="max-w-4xl w-full min-h-32 rounded-xl shadow-2xl shadow-slate-200 dark:shadow-none mb-6 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 max-h-[40vh] flex flex-col gap-2 transition-colors duration-200">
+		<div className="pointer-events-auto max-w-4xl w-full min-h-32 rounded-xl shadow-2xl shadow-slate-200 dark:shadow-none mb-6 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 max-h-[40vh] flex flex-col gap-2 transition-colors duration-200">
 			<textarea
 				className="resize-none field-sizing-content flex-1 px-4 pt-3 bg-transparent focus:outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
 				placeholder="How can I help you?"
