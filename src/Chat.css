@@ -12,6 +12,50 @@
   }
 }
 
+.markdown-ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Nested lists */
+  ul,
+  ol {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Level 2 */
+  ul {
+    list-style-type: circle;
+  }
+
+  /* Level 3 */
+  ul ul {
+    list-style-type: square;
+  }
+}
+
+.markdown-ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Nested lists */
+  ul,
+  ol {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+}
+
 .cursor-animation {
   display: inline-block;
   margin-left: 4px;

@@ -76,13 +76,13 @@ const baseOverrides: MarkdownToJSX.Options['overrides'] = {
 	ul: {
 		component: 'ul',
 		props: {
-			className: 'list-disc ml-4 mb-2'
+			className: 'markdown-ul'
 		}
 	},
 	ol: {
 		component: 'ol',
 		props: {
-			className: 'list-decimal ml-4 mb-2'
+			className: 'markdown-ol'
 		}
 	},
 	table: {
