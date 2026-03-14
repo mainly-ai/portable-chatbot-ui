@@ -6,8 +6,9 @@ import { useAuth } from "./AuthContext"
 
 export type Message = {
 	content: string
-	role: "user" | "assistant"
+	role: "user" | "assistant" | "task"
 	id: string
+	hidden?: boolean
 }
 
 export type MessageHandle = {
@@ -64,7 +65,7 @@ class MessageContentStore {
 		}
 	}
 
-	setMessageContent(id: string, content: string) {
+	setMessageContent(id: string, content: string, role: "user" | "assistant" | "task" = "assistant") {
 		let message = this.messages.get(id)
 		if (message) {
 			message.content = content
@@ -72,7 +73,7 @@ class MessageContentStore {
 		} else {
 			message = {
 				content: content,
-				role: "assistant",
+				role: role,
 				id: id
 			}
 			this.messages.set(id, message)
@@ -156,7 +157,9 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 	}, [messageContentStore])
 
 	const sendMessage = async (message: Message) => {
-		messageContentStore.createMessage(message.id, message)
+		if (!message.hidden) {
+			messageContentStore.createMessage(message.id, message)
+		}
 		const sse = new SSE(`${import.meta.env.VITE_API_ROOT ?? ""}/stream_run_payload`, {
 			method: 'POST',
 			headers: {
@@ -168,17 +171,13 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 			})
 		})
 
-		let currentAssistantMessage: Message = {
-			content: "",
-			role: "assistant",
-			id: Math.random().toString(36).substring(2, 15)
-		}
-		messageContentStore.createMessage(currentAssistantMessage.id, currentAssistantMessage)
+		let currentMessageId: string | null = null;
+		let currentRole: "assistant" | "task" | null = null;
 
 		setStreamStatus({
 			isActive: true,
 			lastWorkAt: null,
-			messageId: currentAssistantMessage.id,
+			messageId: null,
 			showCursor: false
 		})
 
@@ -194,10 +193,23 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 				console.error("set event has no id", event)
 				return
 			}
-			messageContentStore.setMessageContent(event.id, data)
+			messageContentStore.setMessageContent(event.id, data, currentRole || "assistant")
 		})
 
 		sse.addEventListener("work", () => {
+			if (!currentMessageId) {
+				currentMessageId = Math.random().toString(36).substring(2, 15);
+				currentRole = "assistant";
+				messageContentStore.createMessage(currentMessageId, {
+					content: "",
+					role: "assistant",
+					id: currentMessageId
+				});
+				setStreamStatus(prev => ({
+					...prev,
+					messageId: currentMessageId,
+				}));
+			}
 			setStreamStatus(prev => ({
 				...prev,
 				lastWorkAt: Date.now(),
@@ -211,17 +223,48 @@ export function ChatThreadProvider({ id, children }: { id?: string, children: Re
 				...prev,
 				showCursor: false
 			}))
-			if (event.id && event.id !== currentAssistantMessage.id) {
-				currentAssistantMessage = {
-					content: data,
-					role: "assistant",
-					id: event.id
-				}
-				messageContentStore.setMessageContent(event.id, data)
+			if (event.id && event.id !== currentMessageId) {
+				currentMessageId = event.id;
+				currentRole = "assistant";
+				messageContentStore.setMessageContent(event.id, data, "assistant")
 				// Update stream status to point to the new message ID if it changed
 				setStreamStatus(prev => ({ ...prev, messageId: event.id }))
 			} else {
-				messageContentStore.appendMessageContent(event.id ?? currentAssistantMessage.id, data)
+				if (currentRole !== "assistant") {
+					currentMessageId = event.id || Math.random().toString(36).substring(2, 15);
+					currentRole = "assistant";
+					messageContentStore.createMessage(currentMessageId, {
+						content: data,
+						role: "assistant",
+						id: currentMessageId
+					});
+					setStreamStatus(prev => ({ ...prev, messageId: currentMessageId }))
+				} else {
+					if (currentMessageId) {
+						messageContentStore.appendMessageContent(currentMessageId, data)
+					}
+				}
+			}
+		})
+
+		sse.addEventListener("task", (event: _SSEvent) => {
+			const data = JSON.parse(event.data);
+			setStreamStatus(prev => ({
+				...prev,
+				showCursor: false
+			}))
+			
+			if (currentRole === "task" && currentMessageId) {
+				messageContentStore.appendMessageContent(currentMessageId, data + "\n")
+			} else {
+				currentMessageId = event.id || Math.random().toString(36).substring(2, 15);
+				currentRole = "task";
+				messageContentStore.createMessage(currentMessageId, {
+					content: data + "\n",
+					role: "task",
+					id: currentMessageId
+				});
+				setStreamStatus(prev => ({ ...prev, messageId: currentMessageId }))
 			}
 		})
 

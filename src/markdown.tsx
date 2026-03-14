@@ -43,7 +43,6 @@ function CodeRenderer({ className, content }: { className: string; content: stri
 }
 
 function renderRule(next: () => React.ReactNode, node: MarkdownToJSX.ParserResult) {
-	console.log("renderRule", node)
 	if (node.type === RuleType.codeBlock && node.lang === 'latex') {
 		return <LatexRenderer text={node.text} />
 	}

@@ -23,7 +23,7 @@ export default function Chat() {
 
 function ChatLayout() {
 	const { backgroundImage, sidebarImages, setSidebarImage, setBackgroundImage } = useLayoutContext()
-	const { messageHandles, streamStatus, threadId } = useChatThread()
+	const { messageHandles, streamStatus, threadId, sendMessage } = useChatThread()
 	const { getToken } = useAuth()
 
 	const sseRef = useRef<SSE | null>(null)
@@ -115,6 +115,61 @@ function ChatLayout() {
 			}
 		}
 	}, [threadId])
+
+	// Thread Status Polling
+	useEffect(() => {
+		let intervalId: ReturnType<typeof setInterval>
+		let isMounted = true
+
+		const checkThreadStatusEndpoint = async () => {
+			try {
+				const token = await getToken()
+				if (!threadId) return
+				
+				const url = `${import.meta.env.VITE_API_ROOT ?? ""}/thread_status?thread_id=${threadId}`
+				
+				// Initial check to see if the endpoint exists
+				const res = await fetch(url, {
+					method: 'GET',
+					headers: { 'Authorization': `Bearer ${token}` }
+				})
+				
+				if (res.ok && isMounted) {
+					// Endpoint exists, set up periodic timer
+					intervalId = setInterval(async () => {
+						try {
+							const pollRes = await fetch(url, {
+								method: 'GET',
+								headers: { 'Authorization': `Bearer ${token}` }
+							})
+							if (pollRes.ok) {
+								const data = await pollRes.json()
+								if (data.match > 0 || data.matches > 0) {
+									sendMessage({
+										role: "user",
+										content: "Please give me a status of all ongoing jobs.",
+										id: crypto.randomUUID(),
+										hidden: true
+									})
+								}
+							}
+						} catch (e) {
+							console.error("Error polling thread_status", e)
+						}
+					}, 10000) // Polling every 10 seconds
+				}
+			} catch (e) {
+				console.error("Failed to check thread_status endpoint", e)
+			}
+		}
+
+		checkThreadStatusEndpoint()
+
+		return () => {
+			isMounted = false
+			clearInterval(intervalId)
+		}
+	}, [threadId, getToken, sendMessage])
 
 	// Trigger on new messages or stream start
 	useEffect(() => {
@@ -240,12 +295,60 @@ function Cursor({ messageId }: { messageId: string }) {
 
 
 function MessageContent({ message }: { message: Message }) {
+	if (message.role === "task") {
+		return <TaskMessageContent message={message} />
+	}
 	return (
 		<div className="flex flex-col gap-3 max-w-[80%]" style={{
 			alignSelf: message.role === "user" ? "flex-end" : "flex-start"
 		}}>
 			<MarkdownChunk markdown={message.content} />
 			<Cursor messageId={message.id} />
+		</div>
+	)
+}
+
+function TaskMessageContent({ message }: { message: Message }) {
+	const [isOpen, setIsOpen] = useState(false);
+	const { sendMessage } = useChatThread();
+
+	const handleStatusRequest = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		sendMessage({
+			role: "user",
+			content: "Please give me a status of all ongoing jobs.",
+			id: crypto.randomUUID(),
+			hidden: true
+		});
+	};
+
+	return (
+		<div className="flex flex-col gap-3 max-w-[80%] bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 w-full border border-slate-200 dark:border-slate-700/50 transition-all duration-200" style={{ alignSelf: "flex-start" }}>
+			<div 
+				className="flex items-center justify-between cursor-pointer w-full select-none"
+				onClick={() => setIsOpen(!isOpen)}
+			>
+				<div className="flex items-center text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-wider">
+					<span className="mr-2 inline-block w-3">{isOpen ? '▼' : '▶'}</span>
+					background task update
+					{!isOpen && <span className="ml-2"><Cursor messageId={message.id} /></span>}
+				</div>
+				<button 
+					onClick={handleStatusRequest}
+					className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors bg-transparent border-none p-1 rounded-full cursor-pointer flex items-center justify-center"
+					title="Request status update"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+						<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67"/>
+					</svg>
+				</button>
+			</div>
+			{isOpen && (
+				<div className="mt-1">
+					<MarkdownChunk markdown={message.content} />
+					<Cursor messageId={message.id} />
+				</div>
+			)}
 		</div>
 	)
 }
